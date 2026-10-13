@@ -1,10 +1,10 @@
 Development environment
 =======================
 
-The workspace is developed inside a **Docker container** that VS Code opens as a
-**Dev Container**. The container image includes Ubuntu 24.04, ROS 2 Jazzy, ``rclgd`` with its
-Godot build, the Vulkan userspace drivers, and a preconfigured zsh shell. The host only needs
-Docker, VS Code and a working X11/XWayland display.
+The workspace runs in a **Docker container** managed by the root ``Makefile``,
+using the same workflow as ``rbsf-racing``. The image includes Ubuntu 24.04,
+ROS 2 Jazzy, ``rclgd`` with Godot, and zsh. The host needs Docker, Make, an
+NVIDIA GPU and driver, NVIDIA Container Toolkit, and an X11/XWayland display.
 
 This guide covers **Ubuntu 22.04/24.04** and **Debian 12/13** hosts.
 
@@ -19,39 +19,36 @@ How the pieces fit
 
    flowchart LR
      subgraph Host["Host (Ubuntu / Debian)"]
-       VS[VS Code + Dev Containers]
+       MK[Makefile]
        X[X server / XWayland]
-       GPU[/dev/dri GPU/]
+       GPU[NVIDIA GPU]
        SRC[(~/mirena_ws)]
      end
      subgraph C["Container: mirena_ws (ubuntu:24.04)"]
        ROS[ROS 2 Jazzy]
        GD[rclgd + Godot]
-       WS[/home/mirena/mirena_ws/]
+       WS[/ros2_ws/]
      end
-     VS -- docker compose up --> C
+     MK -- docker run --> C
      SRC -- bind mount --> WS
      X -- /tmp/.X11-unix --> GD
-     GPU -- /dev, Vulkan ICDs --> GD
+     GPU -- NVIDIA Container Toolkit --> GD
 
 The relevant files are:
 
-``.devcontainer/devcontainer.json``
-   Tells VS Code to start the ``mirena_ws`` service from the compose file, to open
-   ``/home/mirena/mirena_ws``, and to install the ROS, Python and C++ extensions inside the
-   container. Its ``initializeCommand`` runs ``xhost +local:docker`` on the host before every start,
-   so windows opened in the container (Godot, RViz) can reach your display.
-
-``docker/docker-compose.yml``
-   Runs the container with ``network_mode: host`` and ``ipc: host``, so DDS discovery and shared
-   memory transport work with ROS nodes on the host. It is ``privileged``, mounts ``/dev`` and the
-   host's Vulkan ICD files for GPU access, and bind-mounts the repository root into the container.
+``Makefile``
+   Builds and runs the image with NVIDIA GPU access, host networking and IPC,
+   and the repository mounted at ``/ros2_ws``. Only the X11 socket directory
+   is shared from ``/tmp``.
 
 ``docker/Dockerfile``
-   Builds the image: creates the ``mirena`` user (UID/GID 1000, in the ``video`` and ``render``
-   groups), adds the ROS 2 apt repository, and installs ``ros-jazzy-desktop``, ``ros-dev-tools``,
-   ``ros-jazzy-rclgd`` and the Mesa Vulkan drivers. It also sets ``ROS_DOMAIN_ID=42`` and sources
-   ``/opt/ros/jazzy`` and the workspace overlay from ``~/.zshrc``.
+   Installs ROS 2 Jazzy, ``ros-dev-tools``, ``ros-jazzy-rclgd`` and Vulkan tools.
+   NVIDIA Container Toolkit supplies the graphics drivers at runtime.
+
+``docker/entrypoint.sh``
+   Matches the ``mirena`` user's UID/GID to the host, loads ROS, builds the
+   shared workspace when ``AUTO_BUILD=1``, and runs the requested command
+   as ``mirena``. It does not change ownership of the mounted repository.
 
 1. Install Docker Engine
 ------------------------
@@ -95,15 +92,15 @@ Add the repository that matches your host:
      https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
      | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-Then install the engine together with the Buildx and Compose plugins:
+Then install the engine and Buildx:
 
 .. code-block:: bash
 
    sudo apt-get update
    sudo apt-get install -y docker-ce docker-ce-cli containerd.io \
-     docker-buildx-plugin docker-compose-plugin
+     docker-buildx-plugin make x11-xserver-utils
 
-Let your user run Docker without ``sudo``. VS Code needs this to manage the container. Log out and
+Let your user run Docker without ``sudo``. Log out and
 back in afterwards, or run ``newgrp docker`` in the current shell:
 
 .. code-block:: bash
@@ -115,129 +112,83 @@ Check the installation:
 .. code-block:: console
 
    $ docker run --rm hello-world
-   $ docker compose version
+   $ make --version
 
 .. tip::
 
-   The devcontainer runs ``xhost`` on the host. If it is missing, install it with
+   ``make run`` uses ``xhost`` on the host. If it is missing, install it with
    ``sudo apt-get install -y x11-xserver-utils``.
 
-2. Check the GPU and the display
+2. Configure NVIDIA and the display
+------------------------------------
+
+The simulator uses Godot's **Forward+** renderer and Vulkan compute shaders
+for lidar and depth cameras. Install the host's NVIDIA driver and
+`NVIDIA Container Toolkit <https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html>`_.
+Configure the runtime on the host:
+
+.. code-block:: bash
+
+   sudo nvidia-ctk runtime configure --runtime=docker
+   sudo systemctl restart docker
+   nvidia-smi
+
+``make run`` requests all NVIDIA GPUs and the ``compute,utility,graphics,display``
+driver capabilities. Driver libraries and Vulkan manifests are injected by the
+NVIDIA runtime; host Vulkan manifest directories are not mounted.
+
+Programs use the host X server through ``/tmp/.X11-unix`` and ``DISPLAY``.
+On Wayland desktops, this uses XWayland. Start ``make run`` from a terminal
+where ``echo $DISPLAY`` prints a value such as ``:0``. The Makefile grants
+X server access to your local user with ``xhost +SI:localuser:$(id -un)``.
+
+3. Build and start the container
 --------------------------------
 
-The simulator renders with Godot's **Forward+** renderer on **Vulkan**, and the lidar and depth
-camera run as Vulkan compute shaders. The container has to see a Vulkan-capable GPU.
-
-**Intel and AMD GPUs** work out of the box: the container uses the Mesa drivers and gets the
-device nodes through the ``/dev`` mount. Confirm the host exposes the render node:
-
-.. code-block:: console
-
-   $ ls /dev/dri
-   card0  renderD128
-
-The compose file adds the container user to groups ``44`` (``video``) and ``992``. Group ``992``
-must match the GID of the host's ``render`` group, which varies between distributions. Check yours
-and edit ``group_add`` in ``docker/docker-compose.yml`` if it differs:
-
-.. code-block:: console
-
-   $ getent group render
-   render:x:992:
-
-**NVIDIA GPUs** with the proprietary driver need the
-`NVIDIA Container Toolkit <https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html>`_
-and a ``deploy.resources.reservations.devices`` entry (or ``runtime: nvidia``) in the compose
-service. This is not configured in the repository yet.
-
-**Display.** Programs in the container draw on the host's X server through
-``/tmp/.X11-unix`` and ``$DISPLAY``. On a Wayland session (the default on Ubuntu and on Debian with
-GNOME) this goes through XWayland, which is enabled by default. Make sure ``echo $DISPLAY`` prints
-a value such as ``:0`` in the terminal you start VS Code from.
-
-.. warning::
-
-   ``xhost +local:docker`` lets every local container connect to your X server. That is fine on a
-   personal development machine. On a shared machine, revoke it with ``xhost -local:docker`` when
-   you are done.
-
-3. Install VS Code and the Dev Containers extension
----------------------------------------------------
-
-Install VS Code from Microsoft's apt repository:
-
-.. code-block:: bash
-
-   sudo apt-get install -y wget gpg apt-transport-https
-   wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/packages.microsoft.gpg
-   sudo install -D -o root -g root -m 644 /tmp/packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-   echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] \
-     https://packages.microsoft.com/repos/code stable main" \
-     | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
-   sudo apt-get update
-   sudo apt-get install -y code
-
-Install the **Dev Containers** extension (``ms-vscode-remote.remote-containers``) from the
-Extensions view, or from a terminal:
-
-.. code-block:: bash
-
-   code --install-extension ms-vscode-remote.remote-containers
-
-You don't need to install the ROS, Python or C++ extensions on the host. ``devcontainer.json``
-installs them inside the container:
-
-- ``Ranch-Hand-Robotics.rde-ros-2``: ROS 2 integration, configured for ``jazzy``
-- ``ms-python.python``
-- ``ms-vscode.cpptools-extension-pack``
-
-4. Clone and open the workspace
--------------------------------
+On the host:
 
 .. code-block:: bash
 
    git clone <repository-url> ~/mirena_ws
-   code ~/mirena_ws
+   cd ~/mirena_ws
+   make build
+   make run
 
-When VS Code detects ``.devcontainer/devcontainer.json``, it offers **Reopen in Container**. You
-can also open the Command Palette (:kbd:`Ctrl+Shift+P`) and run
-**Dev Containers: Reopen in Container**.
+``make build`` builds the image. ``make run`` mounts the repository, compiles
+all packages, and opens zsh at ``/ros2_ws`` with ROS and the overlay loaded.
+Files created in the container belong to the host user and persist after exit.
+Edit the repository with your preferred editor on the host.
 
-The first start builds the image, which takes several minutes because it downloads
-``ros-jazzy-desktop``. Later starts reuse the image, and the apt cache mounts make rebuilds
-quick. When it finishes, the VS Code window is attached to the container and its terminals open a
-zsh shell as user ``mirena`` in ``/home/mirena/mirena_ws``.
-
-.. note::
-
-   The repository is bind-mounted, not copied. Edits made in the container show up on the host
-   and vice versa, and files created in the container are owned by UID 1000. If your host user has
-   a different UID, change ``USER_UID``/``USER_GID`` in the Dockerfile.
-
-To rebuild the image after changing the Dockerfile, run
-**Dev Containers: Rebuild Container**.
-
-Without VS Code, the same container can be used from any terminal:
+Use these commands on the host:
 
 .. code-block:: bash
 
-   cd ~/mirena_ws/docker
-   xhost +local:docker
-   docker compose up -d --build
-   docker exec -it mirena_ws zsh
+   make attach                  # Another zsh in the running container
+   make stop                    # Stop the container
+   make run AUTO_BUILD=0        # Skip automatic compilation
+   make build                   # Rebuild the image after Dockerfile changes
+   make help                    # List commands
 
-5. Build the workspace
+``IMAGE``, ``TAG``, ``CONTAINER``, ``ROS_DOMAIN_ID`` (default ``42``),
+``AUTO_BUILD`` and ``CMD`` can be overridden on the Make command line.
+For example, start the simulator directly with:
+
+.. code-block:: bash
+
+   make run CMD="ros2 run mirena_sim mirena_sim --display-driver x11 --ros-args -p track:=random"
+
+4. Build the workspace
 ----------------------
 
-Inside the container:
+To rebuild after editing code, inside the container, without ``sudo``:
 
-.. code-block:: bash
+.. code-block:: zsh
 
-   cd ~/mirena_ws
-   colcon build --symlink-install
-   source install/setup.zsh
+   cd /ros2_ws
+   colcon build --symlink-install --base-paths "$PWD/src"
+   source install/local_setup.zsh
 
-New shells source ``install/setup.zsh`` automatically once it exists (see ``~/.zshrc``).
+New zsh shells load the installed overlay automatically once it exists.
 
 ``mirena_sim`` is built by the ``rclgd`` colcon build type. It installs the Godot project under
 ``install/mirena_sim/share/mirena_sim`` together with a launcher. When ``rclgd`` loads the
@@ -245,14 +196,14 @@ project, it generates typed GDScript wrappers for every message package listed i
 ``src/mirena_sim/package.xml`` (for example ``RosSensorMsgsImu`` or ``RosMirenaCommonCar``) into
 ``addons/rclgd/gen``.
 
-6. Run and edit the simulator
+5. Run and edit the simulator
 -----------------------------
 
 Run the installed simulator as a ROS 2 executable:
 
 .. code-block:: bash
 
-   ros2 run mirena_sim mirena_sim --ros-args -p track:=random
+   ros2 run mirena_sim mirena_sim --display-driver x11 --ros-args -p track:=random
 
 ``track`` takes ``random`` for a generated Trackdrive layout, or a path to a track ``.json`` file
 (see :ref:`simulator/overview:Tracks`).
@@ -261,7 +212,7 @@ To edit the simulator, open your source copy in the Godot editor that ships with
 
 .. code-block:: bash
 
-   ros2 run rclgd godot --editor --path src/mirena_sim
+   ros2 run rclgd godot --display-driver x11 --editor --path src/mirena_sim
 
 The main scene is ``res://Scenes/Sim/Sim.tscn``, and the car is
 ``res://Scenes/Vehicle/mirena_car.tscn`` (see :doc:`../simulator/overview` and
@@ -271,7 +222,8 @@ From the editor, **Run Project** (:kbd:`F5`) starts the simulator straight from 
 rebuild. Run ``colcon build`` again before using ``ros2 run mirena_sim mirena_sim``, so the
 installed copy picks up your changes.
 
-To check that everything works, open a second terminal and list the topics:
+To check that everything works, run ``make attach`` in a second host terminal
+and list the topics inside the container:
 
 .. code-block:: console
 
@@ -306,16 +258,23 @@ Troubleshooting
 ---------------
 
 ``Authorization required, but no authorization protocol specified`` / ``cannot open display``
-   ``xhost`` did not run, or ran for the wrong display. Run ``xhost +local:docker`` on the host,
-   then **Rebuild Container** so ``DISPLAY`` is passed in again.
+   Check ``DISPLAY`` on the host, run ``xhost +SI:localuser:$(id -un)``,
+   and restart with ``make stop`` followed by ``make run``.
 
-Godot falls back to ``llvmpipe`` or reports no Vulkan device
-   The container cannot reach the GPU. Check ``ls -l /dev/dri`` inside the container, and check
-   that the ``render`` GID in ``group_add`` matches the host. ``vulkaninfo --summary`` should list
-   your GPU and not only ``llvmpipe``.
+Godot reports no Vulkan device or cannot create a Vulkan swapchain
+   Run ``nvidia-smi`` and ``vulkaninfo --summary`` inside the container.
+   Both should identify the NVIDIA GPU. Check the host driver and NVIDIA
+   Container Toolkit configuration, then restart the container.
+
+``Permission denied`` when creating build files
+   Run Make as your normal host user. ``HOST_UID`` and ``HOST_GID`` are passed
+   automatically to the entrypoint. Build inside the container without ``sudo``.
+   Existing files created by previous root builds may need ownership repaired
+   separately on the host.
 
 No topics visible from the host
-   The container sets ``ROS_DOMAIN_ID=42``. Export the same value on the host, or unset it in both.
+   The container sets ``ROS_DOMAIN_ID=42``. Export the same value on the host,
+   or override it with ``make run ROS_DOMAIN_ID=0``.
 
 ``Package 'mirena_sim' not found``
-   The workspace overlay is not sourced. Run ``source install/setup.zsh`` after building.
+   Build the workspace and run ``source /ros2_ws/install/local_setup.zsh``.

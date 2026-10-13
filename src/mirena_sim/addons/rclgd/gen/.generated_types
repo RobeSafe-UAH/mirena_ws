@@ -1,13 +1,3 @@
-mirena_common/msg/AsInfo
-mirena_common/msg/Car
-mirena_common/msg/CarControl
-mirena_common/msg/Entity
-mirena_common/msg/EntityList
-mirena_common/msg/Gate
-mirena_common/msg/Heartbeat
-mirena_common/msg/MissionInfo
-mirena_common/msg/Track
-mirena_common/msg/WheelSpeeds
 sensor_msgs/msg/BatteryState
 sensor_msgs/msg/CameraInfo
 sensor_msgs/msg/ChannelFloat32
