@@ -25,6 +25,7 @@ build_status=skipped
 if [ "${AUTO_BUILD:-0}" = "1" ]; then
   cd /ros2_ws
   mkdir -p log
+  # rclgd needs absolute package paths to create valid installation symlinks.
   if ! colcon build --symlink-install --base-paths /ros2_ws/src 2>&1 | tee log/startup-build.log; then
     printf '\n✗ Compilation failed. See /ros2_ws/log/startup-build.log\n' >&2
     exit 1

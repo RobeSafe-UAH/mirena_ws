@@ -11,8 +11,6 @@ RUN_FLAGS := \
 	--name $(CONTAINER) \
 	--net host \
 	--ipc host \
-	--privileged \
-	-v /dev:/dev \
 	-v "$(CURDIR):/ros2_ws" \
 	-e HOST_UID=$(shell id -u) \
 	-e HOST_GID=$(shell id -g) \
