@@ -5,6 +5,8 @@ CONTAINER     ?= mirena_ws
 ROS_DOMAIN_ID ?= 42
 AUTO_BUILD    ?= 1
 CMD           ?= zsh
+DOCS_PYTHON   ?= docs/.venv/bin/python
+DOCS_OUTPUT   ?= docs/site
 
 RUN_FLAGS := \
 	--rm -it \
@@ -24,7 +26,7 @@ RUN_FLAGS := \
 	$(if $(DISPLAY),-e DISPLAY=$(DISPLAY) -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix)
 
 .DEFAULT_GOAL := help
-.PHONY: help build rebuild run attach stop clean
+.PHONY: help build rebuild run attach stop clean docs docs-build
 
 help: ## Show available commands
 	@awk -F':.*## ' '/^[a-z-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -47,3 +49,9 @@ stop: ## Stop the running container
 
 clean: ## Remove generated colcon files
 	rm -rf build/ install/ log/
+
+docs: ## Preview documentation at http://127.0.0.1:8000
+	$(DOCS_PYTHON) -m mkdocs serve --config-file docs/mkdocs.yml --dev-addr 127.0.0.1:8000
+
+docs-build: ## Build and validate the documentation
+	$(DOCS_PYTHON) -m mkdocs build --strict --config-file docs/mkdocs.yml --site-dir "$(abspath $(DOCS_OUTPUT))"

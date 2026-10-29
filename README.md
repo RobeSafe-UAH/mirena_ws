@@ -1,61 +1,56 @@
-# Mirena Workspace
+# Mirena Workspace · MirenaSim
 
-A ROS 2 (Jazzy) workspace for Formula Student Driverless development, built around **MirenaSim**, a
-Godot 4 simulator that publishes the same interfaces as the real car.
+Workspace de **ROS 2 Jazzy** para Formula Student Driverless: simulador en
+**Godot 4**, circuitos de conos, LiDAR y cámaras en GPU, IMU, GNSS y velocidades
+de rueda, con mensajes compartidos y visualizadores de RViz 2.
 
-![MirenaSim](docs/_static/images/sim_banner.png)
+![MirenaSim](docs/pages/assets/images/sim_banner.png)
 
-## Packages
+| Documentación | Contenido |
+|---|---|
+| [Instalación](https://robesafe-uah.github.io/mirena_ws/) | Preparar Linux, Docker, NVIDIA y la pantalla. |
+| [Ejecución](https://robesafe-uah.github.io/mirena_ws/ejecucion/) | Iniciar el contenedor, lanzar el simulador y abrir RViz. |
+| [Simulador](https://robesafe-uah.github.io/mirena_ws/simulador/) | Controles, modos de conducción y circuitos. |
+| [Vehículo](https://robesafe-uah.github.io/mirena_ws/vehiculo/) | Modelo físico, configuración y montaje de sensores. |
+| [ROS2](https://robesafe-uah.github.io/mirena_ws/topics/) | Topics, mensajes, control, TF y ejemplos. |
+| [Sensores](https://robesafe-uah.github.io/mirena_ws/sensores/) | Modelos de LiDAR, cámara, IMU y GNSS; parámetros y QoS. |
+| [Repositorio](https://robesafe-uah.github.io/mirena_ws/repositorio/) | Paquetes, desarrollo y publicación de la documentación. |
 
-| Package | Description |
-|---------|-------------|
-| [`mirena_sim`](src/mirena_sim) | Godot simulator with GPU lidar and camera, IMU, GNSS, and random track generation |
-| [`mirena_common`](src/mirena_common) | Shared message definitions (`Car`, `CarControl`, `EntityList`, `Track`, ...) |
-| [`mirena_rviz2_plugins`](src/mirena_rviz2_plugins) | RViz 2 displays for the `mirena_common` messages |
+## Inicio rápido
 
-## Quick start
-
-Requires Docker, Make, an NVIDIA GPU with
-[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-configured, and an X11/XWayland display.
-
-From the repository root on the host:
+Requiere Linux, Docker Engine, Make, GPU NVIDIA con NVIDIA Container Toolkit y
+una sesión X11/XWayland. Desde la raíz del repositorio, en el equipo:
 
 ```bash
-make build   # Build the Docker image
-make run     # Start the container, compile the workspace and open a shell
+make build
+make run
 ```
 
-Inside the container, start the simulator:
+Dentro del contenedor:
 
 ```bash
 ros2 run mirena_sim mirena_sim --display-driver x11 --ros-args -p track:=random
 ```
 
-Use `make attach` in another host terminal to open a second container shell.
-The repository is shared at `/ros2_ws`; edits and build outputs persist.
+El repositorio se comparte en `/ros2_ws`. Para abrir otra terminal del contenedor,
+ejecutar `make attach` desde el equipo. El dominio ROS 2 por defecto es `42`.
 
-## RViz
+## Documentación local
 
-With the simulator running, open another shell with `make attach`, then run:
-
-```bash
-rviz2 -d /ros2_ws/src/mirena_sim/mirena_sim.rviz
-```
-
-The configuration shows lidar, RGB camera, sensor frames, car state, track and cones.
-Depth visualization is optional and disabled by default.
-
-## Documentation
-
-See [`docs/`](docs) for host setup, simulator architecture, vehicle configuration and sensor
-models. To build the docs locally:
+Las [páginas fuente](docs/pages) utilizan MkDocs Material, como `sci_practica_final`.
+Con Python 3 y su módulo `venv` instalados, ejecutar desde la raíz:
 
 ```bash
-pip install -r docs/requirements.txt
-make -C docs html
+python3 -m venv docs/.venv
+docs/.venv/bin/python -m pip install -r docs/requirements.txt
+make docs
 ```
 
-## License
+Abrir <http://127.0.0.1:8000>. `make docs-build` valida los enlaces y genera
+`docs/site/` en modo estricto.
 
-MIT, see [LICENSE](LICENSE).
+Para publicar, seleccionar **Settings → Pages → Build and deployment → Source →
+GitHub Actions** en el repositorio. El [workflow de documentación](.github/workflows/docs.yml)
+comprueba los cambios en las pull requests y publica al actualizar `main`.
+
+[Licencia MIT](LICENSE)

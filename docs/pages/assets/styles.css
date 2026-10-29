@@ -1,0 +1,28 @@
+.md-typeset h1 {
+  color: var(--md-default-fg-color);
+  font-size: 2.1em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.md-typeset h2 {
+  border-bottom: 2px solid var(--md-primary-fg-color);
+  color: var(--md-primary-fg-color);
+  font-size: 1.45em;
+  font-weight: 700;
+  margin-top: 2em;
+  padding-bottom: 0.35em;
+}
+
+.md-typeset ol > li::marker {
+  color: var(--md-primary-fg-color);
+  font-weight: 700;
+}
+
+.md-typeset img {
+  height: auto;
+}
+
+.md-typeset figure {
+  margin: 1.5em auto;
+}

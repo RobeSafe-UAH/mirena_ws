@@ -15,6 +15,18 @@ if [ "$(id -u)" -eq 0 ]; then
   if [ "$(id -u mirena)" != "$host_uid" ]; then
     usermod -o -u "$host_uid" mirena
   fi
+  # GPU devices retain the host's numeric groups, which can differ from this image.
+  for gpu_device in /dev/dri/card* /dev/dri/renderD*; do
+    [ -c "$gpu_device" ] || continue
+    gpu_gid="$(stat -Lc '%g' "$gpu_device")"
+    if [[ " $(id -G mirena) " == *" $gpu_gid "* ]]; then
+      continue
+    fi
+    if ! getent group "$gpu_gid" >/dev/null; then
+      groupadd --gid "$gpu_gid" "host-gpu-$gpu_gid"
+    fi
+    usermod -a -G "$gpu_gid" mirena
+  done
   chown -R mirena:mirena /home/mirena
   export HOME=/home/mirena USER=mirena
   exec setpriv --reuid=mirena --regid=mirena --init-groups "$0" "$@"

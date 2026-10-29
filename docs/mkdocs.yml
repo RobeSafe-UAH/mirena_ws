@@ -1,0 +1,63 @@
+site_name: Mirena Workspace
+site_description: Guía de instalación, uso y desarrollo de MirenaSim con ROS 2 Jazzy.
+site_url: https://robesafe-uah.github.io/mirena_ws/
+repo_url: https://github.com/RobeSafe-UAH/mirena_ws
+repo_name: RobeSafe-UAH/mirena_ws
+edit_uri: edit/main/docs/pages/
+docs_dir: pages
+site_dir: site
+theme:
+  name: material
+  language: es
+  font: false
+  logo: assets/images/logo.png
+  favicon: assets/images/logo.png
+  palette:
+    primary: indigo
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - content.tabs.link
+    - content.code.copy
+nav:
+  - Instalación: index.md
+  - Ejecución: ejecucion.md
+  - Simulador:
+      - Funcionamiento: simulador.md
+      - Vehículo: vehiculo.md
+  - ROS2: topics.md
+  - Sensores:
+      - Configuración común: sensores.md
+      - LiDAR: sensores/lidar.md
+      - Cámara: sensores/camara.md
+      - IMU: sensores/imu.md
+      - GNSS: sensores/gps.md
+  - Repositorio: repositorio.md
+extra_css:
+  - assets/styles.css
+extra_javascript:
+  - assets/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - md_in_html
+  - sane_lists
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+plugins:
+  - search:
+      lang: es
+validation:
+  links:
+    absolute_links: warn
+    unrecognized_links: warn
+    anchors: warn

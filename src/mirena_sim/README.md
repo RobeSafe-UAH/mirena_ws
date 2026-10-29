@@ -7,7 +7,7 @@ camera, IMU, GNSS and wheel speeds, plus ground truth for evaluating your stack.
 ## Build and run
 
 ```bash
-colcon build --packages-select mirena_sim
+colcon build --symlink-install --base-paths "$PWD/src" --packages-up-to mirena_sim
 source install/setup.bash
 ros2 run mirena_sim mirena_sim --ros-args -p track:=random
 ```
@@ -35,8 +35,9 @@ ros2 run rclgd godot --editor --path src/mirena_sim
 Sensor topics use best-effort QoS. Ground truth is published under `/debug/*` and
 `/track_manager/*`.
 
-Full documentation, covering setup, architecture, vehicle configuration and sensor models, is in
-[`docs/`](../../docs) at the workspace root.
+Full documentation, covering setup, architecture, vehicle configuration and sensor models, is
+available on [GitHub Pages](https://robesafe-uah.github.io/mirena_ws/) and in
+[`docs/pages/`](../../docs/pages) at the workspace root. Run the commands above from that root.
 
 ## License
 
