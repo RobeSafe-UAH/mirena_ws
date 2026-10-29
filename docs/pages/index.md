@@ -18,47 +18,16 @@ La configuración de `make run` solicita el runtime NVIDIA y comparte el socket
 X11 del equipo. Godot utiliza **Forward+ y Vulkan**; el LiDAR y la profundidad
 dependen de shaders de cómputo. Esta guía cubre anfitriones Ubuntu y Debian.
 
-## Preparar el sistema
+## Instalar Docker
 
-=== "Ubuntu"
+Abrir [Instalar Docker](docker.md) y elegir la pestaña **Ubuntu** o **Debian**.
+La guía incluye todos los comandos para añadir el repositorio oficial, instalar
+Docker Engine, Buildx y Compose, habilitar el servicio y dar acceso al usuario.
+También instala Git, Make y las herramientas X11 del equipo.
 
-    1. Instalar las herramientas básicas:
-
-        ```bash
-        sudo apt update
-        sudo apt install -y git make x11-xserver-utils
-        ```
-
-    2. Instalar **Docker Engine y Buildx** siguiendo la
-       [guía oficial para Ubuntu](https://docs.docker.com/engine/install/ubuntu/).
-
-=== "Debian"
-
-    1. Instalar las herramientas básicas:
-
-        ```bash
-        sudo apt update
-        sudo apt install -y git make x11-xserver-utils
-        ```
-
-    2. Instalar **Docker Engine y Buildx** siguiendo la
-       [guía oficial para Debian](https://docs.docker.com/engine/install/debian/).
-
-Habilitar Docker y permitir su uso desde la cuenta de trabajo:
-
-```bash
-sudo systemctl enable --now docker
-sudo usermod -aG docker "$USER"
-```
-
-Cerrar la sesión y volver a entrar para aplicar el grupo. Comprobar:
-
-```bash
-docker run --rm hello-world
-make --version
-```
-
-Ejecutar los comandos `make` del proyecto como usuario habitual.
+Cuando `docker run --rm hello-world` funcione sin `sudo`, continuar con la
+preparación de la GPU y la pantalla. Ejecutar los comandos `make` del proyecto
+como usuario habitual.
 
 ## Preparar la GPU y la pantalla
 

@@ -20,7 +20,9 @@ theme:
     - content.tabs.link
     - content.code.copy
 nav:
-  - Instalación: index.md
+  - Instalación:
+      - Preparar el equipo: index.md
+      - Instalar Docker: docker.md
   - Ejecución: ejecucion.md
   - Simulador:
       - Funcionamiento: simulador.md
