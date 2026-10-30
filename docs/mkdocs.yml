@@ -20,21 +20,22 @@ theme:
     - content.tabs.link
     - content.code.copy
 nav:
-  - Instalación:
-      - Preparar el equipo: index.md
-      - Instalar Docker: docker.md
+  - Instalación: index.md
   - Ejecución: ejecucion.md
-  - Simulador:
-      - Funcionamiento: simulador.md
+  - ROS2:
+      - Topics y control: topics.md
+      - Sensores:
+          - Configuración común: sensores.md
+          - LiDAR: sensores/lidar.md
+          - Cámara: sensores/camara.md
+          - IMU: sensores/imu.md
+          - GNSS: sensores/gps.md
+  - Repositorio:
+      - Archivos y desarrollo: repositorio.md
+      - Simulador: simulador.md
       - Vehículo: vehiculo.md
-  - ROS2: topics.md
-  - Sensores:
-      - Configuración común: sensores.md
-      - LiDAR: sensores/lidar.md
-      - Cámara: sensores/camara.md
-      - IMU: sensores/imu.md
-      - GNSS: sensores/gps.md
-  - Repositorio: repositorio.md
+not_in_nav: |
+  /docker.md
 extra_css:
   - assets/styles.css
 extra_javascript:

@@ -1,26 +1,22 @@
-# Repositorio y desarrollo
+# Repositorio
 
 `mirena_ws` reúne el simulador, los mensajes que comparte con el sistema autónomo y sus visualizadores de RViz. La simulación vive en un proyecto Godot; `rclgd` conecta los scripts GDScript con ROS 2 y permite construir y ejecutar el proyecto desde el workspace.
 
-## Arquitectura
+En esta pestaña, las subpáginas [Simulador](simulador.md) y [Vehículo](vehiculo.md)
+explican el uso de Godot, la dinámica y la configuración del coche. Las
+interfaces y los modelos de [Sensores](sensores.md) se agrupan en la pestaña
+[ROS2](topics.md).
 
-```mermaid
-flowchart LR
-    common["mirena_common<br/>Interfaces ROS 2"] --> sim["mirena_sim<br/>Godot y rclgd"]
-    common --> rviz["mirena_rviz2_plugins<br/>Visualizadores C++"]
-    control["Sistema autónomo externo"] -->|"/control"| sim
-    control -->|"/system/mission_status"| sim
-    sim -->|"Sensores y estado AS"| control
-    sim -->|"Sensores, TF y referencia"| rviz
-```
+## Archivos principales
 
-| Paquete | Construcción | Responsabilidad |
-| --- | --- | --- |
-| `mirena_common` | `ament_cmake` y `rosidl` | Genera los mensajes de estado, control, entidades, circuitos y misión. |
-| `mirena_sim` | Tipo de construcción `rclgd` | Proyecto Godot, dinámica del vehículo, circuito, sensores e interfaz gráfica. |
-| `mirena_rviz2_plugins` | `ament_cmake`, C++ y Qt 5 | Añade displays para `Car`, `EntityList` y `Track` a RViz 2. |
-
-Los nodos de percepción, estimación, planificación y control de un sistema autónomo se conectan a estas interfaces desde otros paquetes. Consulta [Interfaces ROS 2](topics.md) para conocer topics, frames y unidades.
+| Archivo o carpeta | Uso |
+| --- | --- |
+| `docker/` | Imagen Docker, arranque del entorno y comprobaciones de bienvenida. |
+| `src/` | Paquetes ROS 2, proyecto Godot, mensajes y visualizadores de RViz. |
+| `docs/` | Páginas de esta guía, configuración de MkDocs y dependencias. |
+| `Makefile` | Construcción, arranque, acceso y cierre del contenedor. |
+| `README.md` | Acceso a la documentación publicada. |
+| `LICENSE` | Licencia del proyecto. |
 
 ## Organización
 
@@ -54,6 +50,26 @@ mirena_ws/
 ```
 
 `build/`, `install/` y `log/` son salidas de `colcon`. La documentación HTML se genera en `docs/site/`. El código fuente que hay que mantener está en `src/` y `docs/pages/`.
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+    common["mirena_common<br/>Interfaces ROS 2"] --> sim["mirena_sim<br/>Godot y rclgd"]
+    common --> rviz["mirena_rviz2_plugins<br/>Visualizadores C++"]
+    control["Sistema autónomo externo"] -->|"/control"| sim
+    control -->|"/system/mission_status"| sim
+    sim -->|"Sensores y estado AS"| control
+    sim -->|"Sensores, TF y referencia"| rviz
+```
+
+| Paquete | Construcción | Responsabilidad |
+| --- | --- | --- |
+| `mirena_common` | `ament_cmake` y `rosidl` | Genera los mensajes de estado, control, entidades, circuitos y misión. |
+| `mirena_sim` | Tipo de construcción `rclgd` | Proyecto Godot, dinámica del vehículo, circuito, sensores e interfaz gráfica. |
+| `mirena_rviz2_plugins` | `ament_cmake`, C++ y Qt 5 | Añade displays para `Car`, `EntityList` y `Track` a RViz 2. |
+
+Los nodos de percepción, estimación, planificación y control de un sistema autónomo se conectan a estas interfaces desde otros paquetes. Consulta [Interfaces ROS 2](topics.md) para conocer topics, frames y unidades.
 
 ## Escenas y scripts del simulador
 

@@ -1,19 +1,31 @@
 # Ejecución
 
-## Iniciar el contenedor y el simulador
+## Construir y lanzar
 
-1. Abrir una terminal del equipo en la carpeta `mirena_ws`, donde está el
-   `Makefile`. Construir la imagen la primera vez o tras cambiar `docker/`:
+Completar primero [Instalación](index.md): Docker debe funcionar sin `sudo`,
+la GPU debe estar disponible para los contenedores y la terminal debe pertenecer
+a una sesión gráfica con `DISPLAY` definido.
+
+1. Abrir una terminal **del equipo** en la carpeta `mirena_ws`, donde está el
+   `Makefile`. Construir la imagen Docker la primera vez o tras cambiar `docker/`:
 
     ```bash
     make build
     ```
 
-2. Arrancar el contenedor:
+    Si ya se ha construido durante la instalación, continuar con el siguiente
+    paso. Esta imagen contiene ROS 2, Godot y las herramientas; los paquetes
+    del workspace se compilan al arrancar el contenedor.
+
+2. Arrancar el contenedor desde esa misma terminal **del equipo**:
 
     ```bash
     make run
     ```
+
+    Se utiliza el dominio ROS 2 **42** por defecto. Si se ha elegido otro,
+    indicarlo en cada arranque, por ejemplo `make run ROS_DOMAIN_ID=7`;
+    los nodos externos deben compartir ese valor.
 
     Se monta el repositorio en `/ros2_ws`, se adapta el usuario `mirena` al UID y
     GID del anfitrión, se compilan los paquetes con `colcon` y se abre **zsh** con
@@ -21,7 +33,9 @@
     la compilación, la GPU y la pantalla. El registro de compilación se guarda en
     `log/startup-build.log`.
 
-3. Desde esa terminal del contenedor, lanzar el simulador:
+3. Esperar a que termine la compilación y aparezca el resumen de bienvenida.
+   La terminal queda **dentro del contenedor**, en `/ros2_ws`. Lanzar allí el
+   simulador:
 
     ```bash
     ros2 run mirena_sim mirena_sim --display-driver x11 --ros-args -p track:=random
@@ -34,7 +48,9 @@
    Para cerrar también la terminal principal y retirar el contenedor, escribir
    `exit`. Los archivos del repositorio y la compilación permanecen en el equipo.
 
-También se puede lanzar directamente desde el equipo:
+Una vez comprobado el arranque, cerrar el contenedor anterior con `exit` o
+`make stop`. Después, también se puede lanzar directamente desde una terminal
+**del equipo**; añadir `ROS_DOMAIN_ID` si se utiliza un dominio diferente de 42:
 
 ```bash
 make run CMD="ros2 run mirena_sim mirena_sim --display-driver x11 --ros-args -p track:=random"
