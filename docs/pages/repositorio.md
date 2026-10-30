@@ -204,6 +204,10 @@ Al añadir una página, incorpórala a `nav` en `docs/mkdocs.yml` y enlázala co
 
 El [workflow de documentación](https://github.com/RobeSafe-UAH/mirena_ws/blob/main/.github/workflows/docs.yml) comprueba las pull requests y publica los cambios de documentación al actualizar `main`. También se puede lanzar manualmente con **Actions → Documentación → Run workflow**, seleccionando `main`.
 
-Para el primer despliegue, activar **Settings → Pages → Build and deployment → Source → GitHub Actions**, según la [guía oficial de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). La dirección configurada es <https://robesafe-uah.github.io/mirena_ws/>. Los permisos de publicación se limitan al trabajo de despliegue; las pull requests solo construyen el sitio.
+En **Settings → Pages → Build and deployment → Source** debe estar seleccionado **GitHub Actions**, según la [guía oficial de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). La opción **Deploy from a branch** activa otra publicación con Jekyll: transforma el README en la portada y puede sobrescribir el sitio de MkDocs, dejando sus enlaces sin las páginas correspondientes. El workflow comprueba este ajuste antes de publicar y muestra un error si el origen es incorrecto.
+
+Después de publicar, el workflow comprueba que la versión visible corresponde al commit que acaba de desplegar, que la portada pertenece a MkDocs y que todas las páginas del sitemap responden correctamente. La revisión publicada se registra en `deployment.json`. Si es necesario recuperar el sitio tras corregir el origen, ejecutar **Actions → Documentación → Run workflow** sobre `main`.
+
+La dirección configurada es <https://robesafe-uah.github.io/mirena_ws/>. Los permisos de publicación se limitan al trabajo de despliegue; las pull requests solo construyen el sitio.
 
 El HTML generado es una salida de compilación; las revisiones se hacen sobre los Markdown, los recursos y la configuración. `docs/site/` y el entorno virtual quedan excluidos de Git.
